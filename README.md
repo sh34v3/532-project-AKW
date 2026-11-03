@@ -6,8 +6,9 @@
 
 | Email                | GitHub Username |
 | :------------------- | :-------------- |
+| zalfano@umass.edu | |
 | jkaros@umass.edu     | sh34v3          |
-| _____                | _______         |
+| pohsiangwang@umass.edu               | _______         |
 
 ### Project Documentation
 
