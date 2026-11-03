@@ -1,0 +1,8 @@
+| Work Week | Tasks & Deliverables |
+| :--- | :--- |
+| **Week 1**<br>10/28–11/4 | • **Documentation:** Pipeline diagram, latency/coverage SLOs, and project scope.<br>• **Schema:** Define data schemas for ingestion payloads, Flink window states, ML payloads, and Elasticsearch records.<br>• Check-in report |
+| **Week 2**<br>11/5–11/11 | • **Orchestration:** Generate Docker Compose YML for Caddy, Kafka, Flink, DistilBERT, and Elasticsearch.<br>• **Isolated Testing:** Build and test individual services to verify schema compliance.<br>• Check-in report |
+| **Week 3**<br>11/12–11/18 | • **Milestone Due (Nov 18):** Submit milestone deliverables.<br>• **Ingestion:** Configure Caddy load balancing and producer replicas to route logs into Kafka queues.<br>• Check-in report |
+| **Week 4**<br>11/19–11/25 | • **Session Windowing:** Flink windowing to group 1-on-1 chats into logical conversations.<br>• **Sentiment Analysis:** Deploy GameTox-trained DistilBERT and wire Flink to format and request sentiment scores.<br>• Check-in report |
+| **Week 5**<br>11/26–12/2 | • **Thresholding:** Apply Flink logic to flag toxic chats and write flagged records directly to Elasticsearch.<br>• **End-to-End Test:** Validate full data flow from Caddy through Kafka, Flink, DistilBERT, to Elasticsearch.<br>• Check-in report |
+| **Week 6**<br>12/3–12/9 | • **Validation & Performance:** Perform k6 load testing against latency/coverage SLOs and record results.<br>• **Final Due (Dec 9):** Record video report and submit to Gradescope. |
