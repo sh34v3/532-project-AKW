@@ -1,14 +1,11 @@
 :8080 {
-    handle /health {
-        respond 200 {
-            body "{\"status\":\"ok\"}"
-        }
-    }
 
-    reverse_proxy producer-0:4000{
+    reverse_proxy producer-0:4000 producer-1:4001 producer-2:4002 {
         lb_policy round_robin
         health_uri /health
         health_interval 5s
         health_timeout 2s
         fail_duration 10s
     }
+
+}

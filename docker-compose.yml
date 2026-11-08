@@ -14,14 +14,12 @@ services:
     depends_on:
       producer-0:
         condition: service_healthy
-      producer-1:
-        condition: service_healthy
-      producer-2:
-        condition: service_healthy
+
+
   producer-0:
     build: ./producer-service
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -29,13 +27,19 @@ services:
       start_interval: 5s
     environment:
       - PORT=4000
+      - CONTAINER_ID=1
+      - RABBITMQ_HOST=rabbitmq
     ports:
       - "4000:4000"
-  
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+
   producer-1:
     build: ./producer-service
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4001/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -43,19 +47,44 @@ services:
       start_interval: 5s
     environment:
       - PORT=4001
+      - CONTAINER_ID=2
+      - RABBITMQ_HOST=rabbitmq
     ports:
       - "4001:4001"
-  
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
   producer-2:
     build: ./producer-service
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4002/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
       start_interval: 5s
     environment:
-      - PORT=4001
+      - PORT=4002
+      - CONTAINER_ID=3
+      - RABBITMQ_HOST=rabbitmq
     ports:
-      - "4001:4001"
+      - "4002:4002"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck: # this configures a healthcheck for docker-compose to run
+      test: rabbitmq-diagnostics -q ping #cli command to run as a test
+      interval: 5s # how often to run it
+      timeout: 5s # how long to wait until retrying
+      retries: 10 # how many retries
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
