@@ -1,0 +1,61 @@
+services:
+  caddy:
+    image: caddy:2
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    healthcheck:
+      test: ["CMD", "caddy", "version"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      producer-0:
+        condition: service_healthy
+      producer-1:
+        condition: service_healthy
+      producer-2:
+        condition: service_healthy
+  producer-0:
+    build: ./producer-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      start_interval: 5s
+    environment:
+      - PORT=4000
+    ports:
+      - "4000:4000"
+  
+  producer-1:
+    build: ./producer-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      start_interval: 5s
+    environment:
+      - PORT=4001
+    ports:
+      - "4001:4001"
+  
+  producer-2:
+    build: ./producer-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      start_interval: 5s
+    environment:
+      - PORT=4001
+    ports:
+      - "4001:4001"

@@ -1,0 +1,6 @@
+#! /usr/bin/env bash
+
+# check health endpoint
+echo
+curl -X GET http://localhost:4000/health 
+echo
