@@ -23,3 +23,28 @@ This project aims to construct an orchestrated pipeline of services that is capa
 The entire system will be orchestrated by Docker Compose, with service instances for each component of the pipeline: requests will be load balanced using Caddy to producer replicas which then push the jobs to Kafka as the work queue, Flink will consume jobs as the stream processor, DistillBERT will be used as the sentiment analyzer trained on the GameTox dataset, and Elastic Search will be used as the DBMS that Flink writes to when it classifies a chat as flagged.
 
 The GameTox dataset will also be used to synthetically generate our testing data. This will be done by concatenating 3-5 random statements from the dataset to form a "conversation" before being sent to the pipeline.
+
+### Setup
+
+1. Install Docker Desktop: https://docs.docker.com/get-started/get-docker/
+
+2. Clone repo
+
+3. Open Docker Desktop
+
+4. Open a terminal in repo directory -> `docker compose up --build -d`
+
+It might take a little bit to start up the first time, this is because Docker needs to download and build the Virtual Machine images. Eventually, things will settle and the pipeline will be ready.
+
+
+5. When you're done using the pipeline, shut it down : `docker compose down -v`
+
+You can also control the project from the Docker Desktop GUI
+
+#### ./test-pipeline
+
+This is a BASH script that  sends a single request into the pipeline.
+
+1. First, make the script runnable on your machine: `chmod 755 test-pipeline`
+
+2. With the pipeline running, execute the script: `./test-pipeline`
