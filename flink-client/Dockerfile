@@ -22,9 +22,12 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /usr/src/app
 
-COPY flink-connector-rabbitmq-3.0.1-1.17.jar /opt/connectors/flink-connector-rabbitmq.jar
-RUN curl -fsSL -o /opt/connectors/amqp-client.jar \
+RUN curl --create-dirs -fsSL -o /opt/connectors/flink-connector-rabbitmq.jar \
+    https://repo.maven.apache.org/maven2/org/apache/flink/flink-connector-rabbitmq/3.0.1-1.17/flink-connector-rabbitmq-3.0.1-1.17.jar 
+
+RUN curl --create-dirs -fsSL -o /opt/connectors/amqp-client.jar \
     https://repo1.maven.org/maven2/com/rabbitmq/amqp-client/5.17.0/amqp-client-5.17.0.jar
+
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir  -r requirements.txt

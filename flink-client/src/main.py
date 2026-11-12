@@ -5,13 +5,10 @@ from pyflink.datastream.connectors import RMQSource, \
     RollingPolicy
 from pyflink.common import Encoder
 import os
-from pyflink.datastream.connectors.rabbitmq import (
-    RMQConnectionConfig,
-    RMQSource,
-)
+from pyflink.datastream.connectors.rabbitmq import RMQConnectionConfig
 from pyflink.common.serialization import SimpleStringSchema
 
-PORT = int(os.getenv("PORT", 5672))
+RABBITMQ_PORT = int(os.getenv("RABBITMQ_PORT", 4000))
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 
 base_path = os.getenv("OUTPUT_PATH", "/output")
@@ -34,7 +31,7 @@ def main():
         RMQConnectionConfig.Builder()
         .set_virtual_host("/")
         .set_host(RABBITMQ_HOST)
-        .set_port(PORT)
+        .set_port(RABBITMQ_PORT)
         .set_user_name("guest")
         .set_password("guest")
         .build()
@@ -43,7 +40,7 @@ def main():
     rabbitmq_source = RMQSource(
         connection_config,
         "mod-jobs",
-        False,                 # use_correlation_id
+        False,
         SimpleStringSchema(),
     )
 
@@ -63,7 +60,9 @@ def main():
             .build())
         .with_rolling_policy(RollingPolicy.default_rolling_policy(
             part_size=1024 * 1024,
-            rollover_interval=15 * 1000,   # milliseconds
+
+            # milliseconds
+            rollover_interval=15 * 1000,
             inactivity_interval=5 * 1000,
         ))
         .build()
