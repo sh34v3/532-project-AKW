@@ -45,7 +45,7 @@ docker compose --profile train run --rm trainer \
 
 It might take a little bit to start up the first time, this is because Docker needs to download and build the Virtual Machine images. Eventually, things will settle and the pipeline will be ready.
 
-5. To have the application running, run `docker compose up --build -d rabbitmq flink-client`
+5. To have the application running, run `docker compose up --build -d`
 
 6. When you're done using the pipeline, shut it down : `docker compose down -v`
 
