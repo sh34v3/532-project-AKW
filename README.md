@@ -32,12 +32,22 @@ The GameTox dataset will also be used to synthetically generate our testing data
 
 3. Open Docker Desktop
 
-4. Open a terminal in repo directory -> `docker compose up --build -d`
+4. Open a terminal in the repo directory and run the commands, which are responsible for training the sentiment analysis model
+
+```bash
+docker compose --profile train build trainer
+docker compose --profile train run --rm trainer \
+  --train /data/train.csv \
+  --text-col message \
+  --label-col label \
+  --max-train-examples 64
+```
 
 It might take a little bit to start up the first time, this is because Docker needs to download and build the Virtual Machine images. Eventually, things will settle and the pipeline will be ready.
 
+5. To have the application running, run `docker compose up --build -d`
 
-5. When you're done using the pipeline, shut it down : `docker compose down -v`
+6. When you're done using the pipeline, shut it down : `docker compose down -v`
 
 You can also control the project from the Docker Desktop GUI
 

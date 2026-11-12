@@ -101,11 +101,23 @@ services:
     
   flink-client:
     build: ./flink-client
+    restart: on-failure
     depends_on:
-      - rabbitmq
       - flink-jobmanager
+      - rabbitmq
     environment:
       - JOBMANAGER_ADDRESS=flink-jobmanager:8081
       - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - MODEL_DIR=/models/gametox-distilbert
     volumes:
       - ./flink-client:/app
+      - ./output:/output
+      - ./models:/models:ro
+
+  trainer:
+    build: ./trainer
+    profiles: ["train"]
+    volumes:
+      - ./data:/data:ro # GameTox train file
+      - ./models:/models
