@@ -12,9 +12,8 @@
 # I don't know enough about apt (or linux package repos in general) to really say much
 # but this was stupid to debug.
 
-FROM eclipse-temurin:17-jdk-jammy
-
-
+#FROM eclipse-temurin:17-jdk-jammy
+FROM eclipse-temurin:11-jdk-jammy
 
 RUN apt-get update && apt-get install -y \
     python3 \
@@ -23,6 +22,9 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /usr/src/app
 
+COPY flink-connector-rabbitmq-3.0.1-1.17.jar /opt/connectors/flink-connector-rabbitmq.jar
+RUN curl -fsSL -o /opt/connectors/amqp-client.jar \
+    https://repo1.maven.org/maven2/com/rabbitmq/amqp-client/5.17.0/amqp-client-5.17.0.jar
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir  -r requirements.txt

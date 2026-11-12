@@ -109,3 +109,4 @@ services:
       - RABBITMQ_HOST=rabbitmq
     volumes:
       - ./flink-client:/app
+      - ./output:/output
