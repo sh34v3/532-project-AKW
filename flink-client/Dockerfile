@@ -18,7 +18,9 @@ FROM eclipse-temurin:11-jdk-jammy
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
-    curl 
+    curl \
+    && ln -s /usr/bin/python3 /usr/bin/python
+
 
 WORKDIR /usr/src/app
 
