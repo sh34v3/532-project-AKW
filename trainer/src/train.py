@@ -1,10 +1,7 @@
 import argparse
 import os
-
-import numpy as np
 import pandas as pd
 import torch
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.model_selection import train_test_split
 from transformers import (
     AutoModelForSequenceClassification,
@@ -14,6 +11,9 @@ from transformers import (
     TrainingArguments,
 )
 
+# list of possible labels for a given text input
+# ordered according to the outputs represented by the
+# GameTox dataset
 LABELS = [
     "Non-Toxic",
     "Insults and Flaming",
@@ -22,11 +22,17 @@ LABELS = [
     "Threats",
     "Extremism",
 ]
+
+# this is an argument to the model itself, so it can
+# keep track of labels versus label ids
 ID2LABEL = {i: name for i, name in enumerate(LABELS)}
 LABEL2ID = {name: i for i, name in ID2LABEL.items()}
 
 
+# mostly validates dataset and makes sure labels are in integer form
 def prepare(df, text_col, label_col):
+    # check columns specified in arguments to this script
+    # are included in dataset
     for col in (text_col, label_col):
         if col not in df.columns:
             raise SystemExit(
@@ -34,10 +40,13 @@ def prepare(df, text_col, label_col):
                 "Columns in file: {list(df.columns)}. "
                 "Pass the right names with --text-col / --label-col."
             )
+
+    # get rid of invalid data
     df = df[[text_col, label_col]].dropna().copy()
+
     df[text_col] = df[text_col].astype(str)
 
-    # Accept either integer ids (0-5) or the class names from the README.
+    # maps to integer ids
     lowered = {name.lower(): i for name, i in LABEL2ID.items()}
     try:
         df[label_col] = df[label_col].astype(int)
@@ -53,6 +62,7 @@ def prepare(df, text_col, label_col):
             )
     df[label_col] = df[label_col].astype(int)
 
+    # cull illegal labels
     bad = ~df[label_col].between(0, len(LABELS) - 1)
     if bad.any():
         raise SystemExit(
@@ -76,15 +86,16 @@ class TextDataset(torch.utils.data.Dataset):
 
 
 def main():
+    # setup arguments
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "--train",
         required=True,
-        help="training file (csv/tsv/json/jsonl)"
+        help="csv training file"
     )
     ap.add_argument(
         "--val",
-        help="optional validation file; otherwise 10%% of train is held out"
+        help="optional validation file"
     )
     ap.add_argument("--text-col", default="text")
     ap.add_argument("--label-col", default="label")
@@ -92,7 +103,10 @@ def main():
         "--output",
         default=os.getenv("MODEL_DIR", "/models/gametox-distilbert")
     )
+
+    # this is where we declare that we're using distilbert
     ap.add_argument("--base-model", default="distilbert-base-uncased")
+
     ap.add_argument("--epochs", type=int, default=1)
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--lr", type=float, default=5e-5)
@@ -100,7 +114,10 @@ def main():
     ap.add_argument("--max-train-examples", type=int, default=None)
     args = ap.parse_args()
 
+    # setup training dataframe
     train_df = prepare(pd.read_csv(args.train), args.text_col, args.label_col)
+
+    # setup validation dataframe
     if args.val:
         val_df = prepare(pd.read_csv(args.val), args.text_col, args.label_col)
     else:
@@ -110,6 +127,8 @@ def main():
             random_state=42,
             stratify=train_df[args.label_col]
         )
+
+    # select maximum number of training examples if there are more than the max
     if args.max_train_examples and len(train_df) > args.max_train_examples:
         train_df, _ = train_test_split(
             train_df,
@@ -126,6 +145,7 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained(args.base_model)
 
+    # tokenize dataset(s)
     def encode(df):
         enc = tokenizer(
             df[args.text_col].tolist(),
@@ -165,6 +185,7 @@ def main():
         tokenizer=tokenizer,
         data_collator=DataCollatorWithPadding(tokenizer),
     )
+
     trainer.train()
     print("final eval:", trainer.evaluate(), flush=True)
 
