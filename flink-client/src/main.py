@@ -1,21 +1,23 @@
 from pyflink.datastream import StreamExecutionEnvironment
-from pyflink.datastream.connectors import RMQSource, \
-    FileSink, \
-    OutputFileConfig, \
-    RollingPolicy
-from pyflink.common import Encoder, Types
+from pyflink.datastream.connectors import RMQSource
+from pyflink.common import Types
 import os
 from pyflink.datastream.connectors.rabbitmq import RMQConnectionConfig
 from pyflink.datastream.functions import MapFunction, RuntimeContext
 from pyflink.common.serialization import SimpleStringSchema
 import json
+from datetime import datetime, timezone
 from pyflink.common import RestartStrategies
 
 
 RABBITMQ_PORT = int(os.getenv("RABBITMQ_PORT", 4000))
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 
-base_path = os.getenv("OUTPUT_PATH", "/output")
+ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "elasticsearch")
+ELASTICSEARCH_PORT = int(os.getenv("ELASTICSEARCH_PORT", 9200))
+ELASTICSEARCH_INDEX = os.getenv("ELASTICSEARCH_INDEX", "toxicity-results")
+
+# base_path = os.getenv("OUTPUT_PATH", "/output")
 MODEL_DIR = os.getenv("MODEL_DIR", "/models/gametox-distilbert")
 
 
@@ -77,6 +79,62 @@ class ToxicityClassifier(MapFunction):
             )
 
 
+# new map which adds elements to ElasticSearch DB
+class ElasticsearchWriter(MapFunction):
+    MAPPING = {
+        "properties": {
+            "text": {"type": "text"},
+            "label": {"type": "keyword"},
+            "label_id": {"type": "integer"},
+            "confidence": {"type": "float"},
+            "error": {"type": "keyword"},
+            "@timestamp": {"type": "date"},
+        }
+    }
+
+    def __init__(self, host, port, index):
+        self.host = host
+        self.port = port
+        self.index = index
+        self.client = None
+
+    # init ElasticSearch instance
+    def open(self, runtime_context: RuntimeContext):
+        from elasticsearch import Elasticsearch
+
+        self.client = Elasticsearch(
+            f"http://{self.host}:{self.port}",
+            request_timeout=10,
+            max_retries=3,
+            retry_on_timeout=True,
+        )
+
+        # setup index
+        if not self.client.indices.exists(index=self.index):
+            try:
+                self.client.indices.create(
+                    index=self.index, mappings=self.MAPPING
+                )
+            except Exception as exc:
+                if "resource_already_exists_exception" not in str(exc):
+                    raise
+
+    def map(self, value):
+        try:
+            doc = json.loads(value)
+            doc["@timestamp"] = datetime.now(timezone.utc).isoformat()
+
+            # add the value to this DB
+            self.client.index(index=self.index, document=doc)
+        except Exception as exc:
+            print(f"ElasticSearch write failed: {exc}", flush=True)
+        return value
+
+    def close(self):
+        if self.client is not None:
+            self.client.close()
+
+
 def main():
 
     print("flink-client starting...")
@@ -113,25 +171,15 @@ def main():
     # 3. Apply transformations (map, filter, etc.) using Python functions
     ds = ds.map(ToxicityClassifier(MODEL_DIR), output_type=Types.STRING())
 
-    # 4. Print or sink the results
-    ds.print()
-    ds.sink_to(
-        sink=FileSink.for_row_format(
-            base_path=base_path,
-            encoder=Encoder.simple_string_encoder())
-        .with_output_file_config(
-            OutputFileConfig.builder()
-            .with_part_suffix(".txt")
-            .build())
-        .with_rolling_policy(RollingPolicy.default_rolling_policy(
-            part_size=1024 * 1024,
-
-            # milliseconds
-            rollover_interval=15 * 1000,
-            inactivity_interval=5 * 1000,
-        ))
-        .build()
+    # 4. Print results through ElasticSearch
+    ds = ds.map(
+        ElasticsearchWriter(
+            ELASTICSEARCH_HOST, ELASTICSEARCH_PORT, ELASTICSEARCH_INDEX
+        ),
+        output_type=Types.STRING(),
     )
+
+    ds.print()
 
     # 5. Execute the job graph
     print("submitting job...", flush=True)
