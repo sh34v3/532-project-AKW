@@ -96,7 +96,8 @@ async def submit_job():
                 delivery_mode=2,      # Make message persistent (survives broker restarts)
             )
         )
-        
+
+        # Success response
         print(f"Successfully published job to 'mod-jobs': {job_payload}")
         return JSONResponse(
             status_code=200,
@@ -108,6 +109,7 @@ async def submit_job():
         )
 
     except Exception as e:
+        # Failure response
         print(f"Failed to publish job: {e}")
         return JSONResponse(
             status_code=500, 
