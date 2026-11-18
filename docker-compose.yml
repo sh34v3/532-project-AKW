@@ -103,13 +103,19 @@ services:
     build: ./flink-client
     restart: on-failure
     depends_on:
-      - flink-jobmanager
-      - rabbitmq
+      flink-jobmanager:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     environment:
       - JOBMANAGER_ADDRESS=flink-jobmanager:8081
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
       - MODEL_DIR=/models/gametox-distilbert
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
     volumes:
       - ./flink-client:/app
       - ./output:/output
@@ -121,3 +127,34 @@ services:
     volumes:
       - ./data:/data:ro # GameTox train file
       - ./models:/models
+
+  elasticsearch:
+    build: ./elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # this is just for the elasticsearch ui
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.0.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+volumes:
+  esdata:
